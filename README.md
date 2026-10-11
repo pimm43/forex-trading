@@ -4,33 +4,23 @@
 
 This introductory workshop builds a small, reproducible quantitative-research workflow on a Windows PC using free tools.
 
-By the end of the workshop, you should be able to:
+The project currently has two stages:
 
-```text
-download EUR/USD daily data
-→ calculate a few simple indicators
-→ test simple hypotheses
-→ generate charts and results
-→ inspect the code changes
-→ commit the work with Git
-→ push the project to GitHub
-```
+1. **Indicator exploration** — calculate indicators and examine subsequent returns.
+2. **A first strategy backtest** — test a simple SMA20/SMA50 crossover with next-open execution and an adjustable assumed spread.
 
-The workshop is designed to be completed in roughly **one hour** on an ordinary Windows PC or 32 GB mini-PC.
+The goal is to learn how to test claims reproducibly. This is historical research, not a live trading system.
 
 ## Stack
 
 - Windows Terminal / PowerShell
 - Git for Windows
 - Python
-- `uv` or pip for package management
 - `yfinance` for introductory EUR/USD daily data
 - pandas / NumPy
 - matplotlib
 
-No paid AI subscription is required for the local workflow.
-
-## First experiment
+## Stage 1: Explore indicators
 
 The first experiment uses daily **EUR/USD** data and calculates:
 
@@ -42,54 +32,80 @@ The first experiment uses daily **EUR/USD** data and calculates:
 
 It then examines future 1-day, 5-day and 20-day returns and asks simple questions about trend, momentum, RSI and volatility.
 
-The purpose is **not** to optimise a trading strategy. The purpose is to establish a clean research pipeline and learn how to test claims reproducibly. A separate backtest for hypothetical profit/loss will follow after the data and exploratory results have been checked.
+The research script is **[indicator_lab.py](./indicator_lab.py)**.
 
-## Run the workshop
+## Stage 2: Test a simple strategy
 
-See **[WORKSHEET.md](./WORKSHEET.md)** for the step-by-step exercise.
+The new **[strategy_backtest.py](./strategy_backtest.py)** script tests a basic rule:
 
-The first research script is **[indicator_lab.py](./indicator_lab.py)**. It downloads daily EUR/USD data, calculates the indicators, creates a forward-return summary, and saves a price chart.
+- If the 20-day SMA is above the 50-day SMA, hold a hypothetical long position.
+- If the 20-day SMA is at or below the 50-day SMA, hold a hypothetical short position.
+- The signal is calculated from a daily close and applied at the following day's open.
+- Performance is measured from one daily open to the next daily open, so the strategy does not use a signal before it was available.
+- An estimated spread is charged when the position changes. The default full spread is 1.0 pip, split across entry and exit.
 
-### Quick start on Windows
+This is a deliberately simple baseline, not a recommendation to trade this rule. It is not a scalping test and does not model account currency, lot size, leverage, swaps/financing, variable spreads, slippage, commissions, margin calls or broker execution details.
 
-Install Python and Git, then open PowerShell and clone the repository:
+## Run the project on Windows
 
-```powershell
-git clone https://github.com/pimm43/forex-trading.git
-cd forex-trading
-```
+After cloning the repository, open PowerShell in the project folder.
 
-Using `uv`:
-
-```powershell
-uv init
-uv add yfinance pandas numpy matplotlib
-uv run python indicator_lab.py
-```
-
-If the repository already has a `pyproject.toml` when you clone it, do not run `uv init` again; just install the dependencies listed in that file.
-
-Alternatively, with a standard Python installation:
+Create and activate a virtual environment:
 
 ```powershell
 py -m venv .venv
-.venv\Scripts\Activate.ps1
-py -m pip install -r requirements.txt
-py indicator_lab.py
+.\.venv\Scripts\Activate.ps1
 ```
 
-The script writes these files to an `output` folder:
+If PowerShell blocks activation scripts, this command permits activation only for the current PowerShell session:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+Install dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Run indicator exploration:
+
+```powershell
+python indicator_lab.py
+```
+
+Run the SMA crossover backtest:
+
+```powershell
+python strategy_backtest.py
+```
+
+To test a different data period or assumed spread:
+
+```powershell
+python strategy_backtest.py --period 5y --spread-pips 1.5
+```
+
+## Output files
+
+The scripts create an `output` folder.
+
+Indicator exploration creates:
 
 - `eurusd_indicators.csv` — prices, indicator values and future returns
 - `forward_return_summary.csv` — grouped return statistics
 - `eurusd_moving_averages.png` — price and moving-average chart
 
-You can request a different Yahoo Finance history period, for example:
+The strategy backtest creates:
 
-```powershell
-py indicator_lab.py --period 5y
-```
+- `eurusd_sma_backtest.csv` — daily positions, returns, estimated costs and equity indices
+- `eurusd_sma_backtest_summary.csv` — headline performance statistics
+
+## How to interpret the backtest
+
+Review net return alongside maximum drawdown, annualised return, the buy-and-hold comparison and the assumed spread. A positive historical return alone does not prove a strategy is reliable. Results can change with data source, execution assumptions and costs. Any promising rule should be checked on a separate out-of-sample period before drawing conclusions.
 
 ## Important boundary
 
-This workshop is for **research and education only**. The script does not connect to a broker, place trades, model leverage, or calculate account-currency trading P/L. Forward returns are exploratory statistics, not proof of a profitable strategy. A later backtest must specify entry/exit timing, position sizing, transaction costs and drawdown, and should be checked on data not used to develop the rule.
+This workshop is for **research and education only**. It does not connect to a broker or place trades. The backtest is a simplified hypothetical model and does not calculate actual broker account P/L or guarantee future performance.
