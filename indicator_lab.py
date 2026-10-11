@@ -84,6 +84,7 @@ def calculate_indicators(data: pd.DataFrame) -> pd.DataFrame:
         result["SMA_20"] > result["SMA_50"], "20-day SMA above 50-day SMA",
         "20-day SMA at/below 50-day SMA"
     )
+    result.loc[result["SMA_20"].isna() | result["SMA_50"].isna(), "SMA_Trend"] = np.nan
     result["RSI_Group"] = pd.cut(
         result["RSI_14"],
         bins=[-np.inf, 30, 70, np.inf],
@@ -94,12 +95,14 @@ def calculate_indicators(data: pd.DataFrame) -> pd.DataFrame:
         result["Momentum_20"] > 0, "Positive 20-day momentum",
         "Zero or negative 20-day momentum"
     )
+    result.loc[result["Momentum_20"].isna(), "Momentum_Group"] = np.nan
     volatility_median = result["Volatility_20_Annualised"].median()
     result["Volatility_Group"] = np.where(
         result["Volatility_20_Annualised"] > volatility_median,
         "Above-median volatility",
         "At/below-median volatility",
     )
+    result.loc[result["Volatility_20_Annualised"].isna(), "Volatility_Group"] = np.nan
     return result
 
 
